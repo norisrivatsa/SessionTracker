@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courses - Time Tracker</title>
+    <!-- Notification Container -->
+    <div id="notification-container" style="position: fixed; bottom: 32px; right: 32px; z-index: 2000; display: none;"></div>
+    <style>
+        /* Notification styles (independent, do not change existing styles) */
+        #notification-container {
+            min-width: 260px;
+            max-width: 350px;
+            pointer-events: none;
+            bottom: 32px;
+            top: auto;
+            right: 32px;
+            position: fixed;
+        }
+        .notification {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #fff;
+            color: #222;
+            border-radius: 10px;
+            box-shadow: 0 4px 18px 0 rgba(255, 87, 34, 0.18);
+            padding: 18px 28px;
+            font-size: 1.08rem;
+            font-weight: 500;
+            margin-bottom: 18px;
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: notification-in 0.35s cubic-bezier(.4,2,.6,1) forwards;
+            border-left: 6px solid #ff9800;
+            pointer-events: auto;
+        }
+        .notification.success {
+            border-left-color: #4caf50;
+            background: #e8f5e9;
+            color: #256029;
+        }
+        .notification.fail {
+            border-left-color: #f44336;
+            background: #ffebee;
+            color: #b71c1c;
+        }
+        .notification .close-btn {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.3rem;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        @keyframes notification-in {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes notification-out {
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+        .dark-mode #notification-container .notification {
+            background: #232323;
+            color: #f5f5f5;
+        }
+        .dark-mode #notification-container .notification.success {
+            background: #1b3c1b;
+            color: #b9f6ca;
+        }
+        .dark-mode #notification-container .notification.fail {
+            background: #3c1b1b;
+            color: #ffcdd2;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+            color: #222;
+        }
+        .container {
+            width: 100vw;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            border-radius: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            height: 20%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 32px 5vw 0 5vw;
+            margin-bottom: 32px;
+        }
+        .header h1 {
+            font-size: 2.2rem;
+            color: #ff5722;
+            margin: 0;
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            width: 100vw;
+            align-items: center;
+            height: 80%;
+            padding-top: 30px;
+            /* border: 2px solid #ff9800; */
+        }
+        .btn-section {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 16px;
+            width: 80%;
+            height: 20%;
+            /* border: 2px solid #ff9800; */
+            padding-left: 5%;
+            padding-right: 5%;
+        }
+        .btn2-section {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 30px;
+            
+        }
+        .courses-list {
+            background: #fff;
+            /* border: 2px solid #ff9800; */
+            height: 80%;
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            gap: 24px;
+            justify-content: flex-start;
+            align-items: center;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            padding: 24px;
+        }
+        .course-card {
+            background: #fff8f6;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.10);
+            height: 50%;
+            width: 90%;
+            padding-left: 5%;
+            padding-right: 5%;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: space-between;
+            transition: box-shadow 0.3s, transform 0.2s;
+            overflow-y: hidden;
+            /* border: 2px solid #ff9800; */
+        }
+        .course-card:hover {
+            box-shadow: 0 8px 32px 0 rgba(255, 87, 34, 0.18);
+            transform: scale(1.02);
+        }
+        .course-card-info {
+            display: flex;
+            flex-direction: row;
+            padding-top: 30px;
+            padding-bottom: 30px;
+            overflow-y: hidden;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .course-meta-title{
+            gap: 4px;
+            display: flex;
+            flex-direction: column;
+        }
+        .course-meta-sessions{
+            gap: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .course-meta-time{
+            gap: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .course-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #ff5722;
+        }
+        .course-desc {
+            color: #ff9800;
+            font-size: 1.05rem;
+        }
+        .course-meta {
+            color: #888;
+            font-size: 0.98rem;
+        }
+        .create-btn, .modify-btn, .delete-btn {
+            background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 28px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            box-shadow: 0 2px 8px 0 rgba(255, 87, 34, 0.10);
+            cursor: pointer;
+            transition: box-shadow 0.2s, color 0.2s, transform 0.2s;
+        }
+        .create-btn:hover , .modify-btn:hover, .delete-btn:hover {
+            background: linear-gradient(90deg, #ff5722 0%, #ff9800 100%);
+            color: #fff3e0;
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.18);
+            transform: scale(1.08);
+        }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0; top: 0;
+            width: 100vw; height: 100vh;
+            overflow: auto;
+            background: rgba(0,0,0,0.18);
+        }
+        .modal-content {
+            background: #fff8f6;
+            margin: 8% auto;
+            border-radius: 16px;
+            padding: 32px 40px;
+            width: 90vw; max-width: 420px;
+            box-shadow: 0 8px 32px 0 rgba(255, 87, 34, 0.18);
+            position: relative;
+        }
+        .close {
+            color: #ff5722;
+            position: absolute;
+            top: 18px; right: 24px;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .modal-content label {
+            color: #ff5722;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .modal-content input, .modal-content textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #ff9800;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #fff;
+            color: #222;
+            margin-bottom: 16px;
+        }
+        .modal-content input:focus, .modal-content textarea:focus {
+            outline: none;
+            border-color: #ff5722;
+        }
+        .modal-content .submit-btn {
+            background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 2px 8px 0 rgba(255, 87, 34, 0.10);
+            cursor: pointer;
+            margin-top: 12px;
+            transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+        }
+        .modal-content .submit-btn:hover {
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.18);
+            background: linear-gradient(90deg, #ff5722 0%, #ff9800 100%);
+            color: #fff3e0;
+        }
+        .modal-content select {
+            font-size: 1rem;
+            width: 105%;
+            height: 40px;
+            background: #fff;
+            border: 1.5px solid #ff9800;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        .dark-mode .modal-content select {
+            border-color: #ffb74d;
+            background: #232323;
+            color: #f5f5f5;
+        }
+        /* Dark mode styles (reuse from home.html) */
+        .dark-mode { background: #181818; color: #f5f5f5; }
+        .dark-mode .container { background: #181818; }
+        .dark-mode .header h1 { color: #ff9800; }
+        .dark-mode .main-content { background: #181818; color: #f5f5f5; }
+        .dark-mode .courses-list { background: #181818; }
+        .dark-mode .courses-table { background: #232323; color: #f5f5f5; }
+        .dark-mode .courses-table th { background: #232323; color: #ffb74d; }
+        .dark-mode .courses-table td { color: #f5f5f5; }
+        .dark-mode .courses-table tr:hover {
+            background: #333;
+        }
+        .dark-mode .course-card { background: #232323; color: #f5f5f5; }
+        .dark-mode .course-title { color: #ffb74d; }
+        .dark-mode .course-desc { color: #ff9800; }
+        .dark-mode .course-meta { color: #bbb; }
+        .dark-mode .create-btn { background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%); color: #fff; }
+        .dark-mode .modal-content { background: #232323; color: #f5f5f5; }
+        .dark-mode .modal-content label { color: #ffb74d; }
+        .dark-mode .modal-content input, .dark-mode .modal-content textarea { background: #232323; color: #f5f5f5; border-color: #ffb74d; }
+        .dark-mode .modal-content input:focus, .dark-mode .modal-content textarea:focus { border-color: #ff9800; }
+        .dark-mode .modal-content .submit-btn { background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%); color: #ffb74d; }
+        .dark-mode .modal-content .submit-btn:hover { background: linear-gradient(90deg, #ff5722 0%, #ff9800 100%); color: #fff; }
+        /* Navbar styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 0;
+            background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%);
+            box-shadow: 4px 0 24px 0 rgba(255, 87, 34, 0.10);
+            overflow-x: hidden;
+            transition: width 0.3s cubic-bezier(.4,2,.6,1), box-shadow 0.3s;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            padding-top: 60px;
+        }
+        .navbar.open {
+            width: 20%;
+            box-shadow: 4px 0 32px 0 rgba(255, 87, 34, 0.18);
+        }
+        .navbar-toggle {
+            background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            box-shadow: 0 2px 8px 0 rgba(255, 87, 34, 0.10);
+            cursor: pointer;
+            margin-right: 18px;
+            margin-left: -8px;
+            transition: box-shadow 0.2s, color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .navbar-toggle:hover {
+            color: #fff3e0;
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.18);
+            transform: scale(1.08);
+        }
+        .dark-mode .navbar-toggle {
+            /* color: #ffb74d; */
+            background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+            color: #fff;
+        }
+        .dark-mode .navbar-toggle:hover {
+            color: #fff;
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.18);
+            transform: scale(1.08);
+        }
+        .navbar .close-btn {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            color: #ff5722;
+            cursor: pointer;
+        }
+        .navbar ul {
+            list-style: none;
+            padding: 0 0 0 24px;
+            margin: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            gap: 12px;
+        }
+        .navbar-elements {
+            /* margin: 24px 0; */
+            width: 80%;
+            border-radius: 12px;
+            transition: 
+                color 0.2s,
+                background 0.2s,
+                box-shadow 0.25s,
+                transform 0.25s;
+        }
+        .navbar a {
+            width: 80%;
+            text-decoration: none;
+            color: #ff5722;
+            font-size: 1.15rem;
+            font-weight: 600;
+            display: inline-block;
+            padding: 14px 32px;
+
+        }
+        .navbar-elements:hover {
+            color: #ff9800;
+            background: #fff3e0;
+            transform: scale(1.08);
+            box-shadow: 0 4px 18px 0 rgba(255, 87, 34, 0.18), 0 2px 8px 0 rgba(255, 152, 0, 0.12);
+        }
+        .dark-mode .navbar-elements {
+            color: #ffb74d;
+        }
+        .dark-mode .navbar-elements:hover {
+            background: #232323;
+            box-shadow: 0 4px 18px 0 rgba(255, 152, 0, 0.22), 0 2px 8px 0 rgba(255, 87, 34, 0.14);
+            color: #ff9800;
+        }
+        .dark-mode .navbar a{
+            color: #ffb74d;
+            text-decoration: none;
+        }
+        .dark-mode .navbar {
+            background: linear-gradient(180deg, #232323 0%, #181818 100%);
+            box-shadow: 4px 0 24px 0 rgba(255, 152, 0, 0.13);
+        }
+        .dark-mode .navbar .close-btn,
+        .dark-mode .navbar-toggle {
+            color: #ffb74d;
+        }
+        .dark-mode .navbar-toggle:hover {
+            color: #ff9800;
+        }
+        .dark-mode .navbar.open {
+            box-shadow: 4px 0 32px 0 rgba(255, 152, 0, 0.18);
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar" id="navbar">
+        <button class="close-btn" id="closeNavbar" aria-label="Close navigation">&times;</button>
+        <ul id="navbarLinks">
+            <li class="navbar-elements"><a href="/home">Home</a></li>
+            <li class="navbar-elements"><a href="/courses">Courses</a></li>
+            <li class="navbar-elements"><a href="/record_session">Record Session</a></li>
+            <li class="navbar-elements"><a href="/all_sessions">All Sessions</a></li>
+            <li class="navbar-elements"><a href="/analytics">Analytics</a></li>
+        </ul>
+    </div>
+    <div class="navbar-bg" id="navbarBg"></div>
+    <div class="container">
+        <div class="header">
+            <button class="navbar-toggle" id="openNavbar" aria-label="Open navigation">&#9776;</button>
+            <h1>Courses</h1>
+            <button id="mode-toggle" aria-label="Toggle dark/light mode" style="background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%); color: #fff; border: none; border-radius: 20px; padding: 8px 22px; font-size: 1rem; font-weight: 600; box-shadow: 0 2px 8px 0 rgba(255, 87, 34, 0.10); cursor: pointer; transition: box-shadow 0.2s;">🌙 Dark Mode</button>
+        </div>
+        <div class="main-content">
+            <div class="btn-section">
+                <button class="create-btn" id="openCreateCourseModal">+ Create Course</button>
+                <div class="btn2-section">
+                    <button class="modify-btn" onclick="openModifyCourseModal()" >Modify Course</button>
+                    <button class="delete-btn" >Delete Course</button>
+                </div>
+            </div>
+            <div class="courses-list" id="coursesList">
+                <!-- Course cards will be rendered here by JS -->
+                <div class="course-card" style="position:relative;">
+                    <div class="course-card-info">
+                        <div style="display: flex; flex-direction: column;">
+                            <span class="course-title">Introduction to Falconry</span>
+                            <span class="course-meta"><b>Workshop</b></span>
+                        </div>
+                        <div>
+                            <span>Sessions</span>
+                            <span class="course-meta">8</span>
+                        </div>
+                        <span class="course-meta">12h 30m</span>
+                    </div>
+                    <button class="expand-btn" aria-label="Show details" data-idx="0" style="background:none;border:none;font-size:1.6rem;cursor:pointer;align-self:center;">&#9660;</button>
+                    <div class="course-details" id="course-details-0" style="display:none;position:absolute;top:100%;left:0;width:100%;background:#fff8f6;border-radius:0 0 16px 16px;box-shadow:0 8px 32px 0 rgba(255,87,34,0.10);padding:18px 24px;z-index:10;">
+                        <div><b>Description:</b> Learn the ancient art of falconry, including handling, training, and hunting techniques.</div>
+                        <div><b>Course ID:</b> FLC2025-01</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Create Course Modal -->
+    <div id="createCourseModal" class="modal">
+        <div class="modal-content">
+            <button class="close" id="closeCreateCourseModal">&times;</button>
+            <h2>Create Course</h2>
+            <form id="createCourseForm">
+                    <label for="name">Course Name</label>
+                    <input type="text" id="name" name="name" required />
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="2"></textarea>  
+                    <label for="course_type">Course Type</label>
+                    <select id="course_type" name="course_type" required>
+                        <option value="Course">Course</option>
+                        <option value="Project">Project</option>
+                    </select>
+                    <label for="weekly_target">Weekly Target (hours)</label>
+                    <input type="number" id="weekly_target" name="weekly_target" min="0" step="0.1" placeholder="e.g. 10" />
+                    <label for="started_on">Start Date</label>
+                <input type="datetime-local" id="started_on" name="started_on" />
+                <button type="submit" class="submit-btn">Create</button>
+            </form>
+        </div>
+    </div>
+    <!-- Modify Course Modal -->
+    <div id="modifyCourseModal" class="modal">
+        <div class="modal-content">
+            <button class="close" id="closeModifyCourseModal">&times;</button>
+            <h2>Modify Course</h2>
+            <form id="modifyCourseForm">
+                <label for="modify_course_select">Select Course</label>
+                <select id="modify_course_select" name="modify_course_select" required></select>
+                <label for="modify_name">Course Name</label>
+                <input type="text" id="modify_name" name="modify_name" required />
+                <label for="modify_description">Description</label>
+                <textarea id="modify_description" name="modify_description" rows="2"></textarea>
+                <label for="modify_course_type">Course Type</label>
+                <select id="modify_course_type" name="modify_course_type" required>
+                    <option value="Course">Course</option>
+                    <option value="Project">Project</option>
+                </select>
+                <label for="modify_weekly_target">Weekly Target (hours)</label>
+                <input type="number" id="modify_weekly_target" name="modify_weekly_target" min="0" step="0.1" placeholder="e.g. 10" />
+                <label for="modify_started_on">Start Date</label>
+                <input type="datetime-local" id="modify_started_on" name="modify_started_on" />
+                <button type="submit" class="submit-btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+    <!-- Delete Course Modal -->
+    <div id="deleteCourseModal" class="modal">
+        <div class="modal-content">
+            <button class="close" id="closeDeleteCourseModal">&times;</button>
+            <h2>Delete Course</h2>
+            <form id="deleteCourseForm">
+                <label for="delete_course_select">Select Course</label>
+                <select id="delete_course_select" name="delete_course_select" required></select>
+                <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #ff5722 0%, #ff9800 100%);">Delete</button>
+            </form>
+        </div>
+    </div>
+    <!-- Notification Container (independent from rest of code) -->
+    <div id="notification-container"></div>
+    <script src="functionality/courses.js"></script>
+    <script>
+        // Dark/Light mode toggle (reuse from home.js)
+        const modeToggle = document.getElementById('mode-toggle');
+        const body = document.body;
+        let dark = false;
+        function setMode(isDark) {
+            if (isDark) {
+                body.classList.add('dark-mode');
+                modeToggle.textContent = '☀️ Light Mode';
+            } else {
+                body.classList.remove('dark-mode');
+                modeToggle.textContent = '🌙 Dark Mode';
+            }
+        }
+        if (localStorage.getItem('darkMode') === 'true') {
+            dark = true;
+            setMode(true);
+        }
+        modeToggle.addEventListener('click', () => {
+            dark = !dark;
+            setMode(dark);
+            localStorage.setItem('darkMode', dark);
+        });
+        // Navbar functionality (same as home.html)
+        const navbar = document.getElementById('navbar');
+        const openNavbar = document.getElementById('openNavbar');
+        const closeNavbar = document.getElementById('closeNavbar');
+        const navbarBg = document.getElementById('navbarBg');
+        openNavbar.addEventListener('click', () => {
+            navbar.classList.add('open');
+            navbarBg.style.display = 'block';
+        });
+        closeNavbar.addEventListener('click', () => {
+            navbar.classList.remove('open');
+            navbarBg.style.display = 'none';
+        });
+        navbarBg.addEventListener('click', () => {
+            navbar.classList.remove('open');
+            navbarBg.style.display = 'none';
+        });
+        // Show modify modal on button click
+        function openModifyCourseModal() {
+            document.getElementById('modifyCourseModal').style.display = 'block';
+            if (window.populateModifyCourseSelect) window.populateModifyCourseSelect();
+        }
+        document.getElementById('closeModifyCourseModal').onclick = function() {
+            document.getElementById('modifyCourseModal').style.display = 'none';
+        };
+        window.onclick = function(event) {
+            const modal = document.getElementById('modifyCourseModal');
+            if (event.target == modal) modal.style.display = 'none';
+        };
+        // Show delete modal on button click
+        function openDeleteCourseModal() {
+            document.getElementById('deleteCourseModal').style.display = 'block';
+            if (window.populateDeleteCourseSelect) window.populateDeleteCourseSelect();
+        }
+        document.querySelector('.delete-btn').onclick = openDeleteCourseModal;
+        document.getElementById('closeDeleteCourseModal').onclick = function() {
+            document.getElementById('deleteCourseModal').style.display = 'none';
+        };
+        window.onclick = function(event) {
+            const modal = document.getElementById('deleteCourseModal');
+            if (event.target == modal) modal.style.display = 'none';
+        };
+    </script>
+</body>
+</html>

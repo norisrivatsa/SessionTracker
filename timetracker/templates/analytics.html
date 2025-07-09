@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #fff;
+            color: #222;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 90vw;
+            margin: 0 5vw;
+            margin-bottom: 5vh;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        .row {
+            display: flex;
+            flex-direction: row;
+            gap: 32px;
+            margin-bottom: 24px;
+            height: 30vh;
+        }
+        .summary-container, .max-session-container {
+            flex: 1;
+            background: #fff8f6;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.10);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: box-shadow 0.25s, transform 0.25s;
+            cursor: pointer;
+        }
+        .summary-container:hover, .max-session-container:hover, .target-card:hover, .completed-card:hover {
+            box-shadow: 0 8px 32px 0 rgba(255, 87, 34, 0.18);
+            transform: scale(1.03);
+        }
+        .summary-title {
+            font-size: 1.2rem;
+            color: #ff5722;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .summary-value {
+            font-size: 2.5rem;
+            color: #ff9800;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .summary-desc {
+            color: #888;
+            font-size: 1.05rem;
+        }
+        .graph-row {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    height: 32vh;
+    background: #fff8f6;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.10);
+    padding: 24px 32px 18px 32px;
+    position: relative;
+    transition: box-shadow 0.25s, transform 0.25s;
+}
+.graph-row:hover {
+    box-shadow: 0 8px 32px 0 rgba(255, 87, 34, 0.18);
+    transform: scale(1.01);
+}
+
+.graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.graph-title {
+    font-size: 1.2rem;
+    color: #ff5722;
+    font-weight: 600;
+}
+
+.graph-dropdown {
+    font-size: 1rem;
+    padding: 6px 18px;
+    border-radius: 8px;
+    border: 1.5px solid #ff9800;
+    background: #fff;
+    color: #222;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.dark-mode .graph-dropdown {
+    background: #232323;
+    border-color: #ff5722;
+    color: #fff;
+}
+.graph-dropdown:focus {
+    border-color: #ff5722;
+}
+
+#barGraph {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    width: 100%;
+    height: 20vh; /* uniform height container */
+    justify-content: space-evenly;
+    margin-top: 12px;
+}
+
+/* === BAR CONTAINER === */
+.bar-day-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    /* width will be set dynamically by JS for month view */
+}
+
+.bar {
+    background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+    border-radius: 8px 8px 0 0;
+    min-width: 28px;
+    position: relative;
+    transition: box-shadow 0.2s, background 0.2s, height 0.3s ease;
+    cursor: pointer;
+    /* Height is dynamic, set via JS */
+}
+
+/* Day label below bar */
+.bar-label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    color: #888;
+    height: 20px;         /* Fixed height */
+    line-height: 20px;    /* Vertically center */
+    margin-top: 6px;      /* Space between bar and label */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+
+.bar:hover {
+    background: linear-gradient(90deg, #ffb74d 0%, #ff9800 100%);
+    box-shadow: 0 4px 16px 0 rgba(255, 152, 0, 0.22);
+    z-index: 2;
+}
+
+/* Adjust width for month view */
+.month-view .bar-day-container {
+    flex: 1;
+}
+.month-view .bar {
+    width: 100%; /* inherit from container */
+    min-width: unset;
+}
+
+/* === BAR VALUE TOOLTIP === */
+.bar-tooltip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    min-height: 36px;
+    line-height: 36px;
+    background: #232323;
+    color: #fff;
+    padding: 0 14px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.18);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s, background 0.18s, color 0.18s;
+    z-index: 9999;
+}
+.dark-mode .bar-tooltip {
+    background: #fff8f6;
+    color: #222;
+}
+
+
+        .targets-row, .dark-mode .targets-row {
+            background: #fff8f6;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.10);
+            padding: 24px 32px 18px 32px;
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            transition: box-shadow 0.25s, transform 0.25s;
+        }
+        .dark-mode .targets-row {
+            background: #232323 !important;
+            color: #f5f5f5;
+        }
+        .target-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: transparent;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: none;
+        }
+        .target-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ff5722;
+            margin-right: 18px;
+        }
+        .target-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-left: auto;
+        }
+        .target-green {
+            color: #4caf50 !important;
+        }
+        .target-red {
+            color: #f44336 !important;
+        }
+        .completed-row {
+            background: #fff8f6;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.10);
+            padding: 24px 32px 18px 32px;
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            transition: box-shadow 0.25s, transform 0.25s;
+        }
+        .completed-row:hover {
+            box-shadow: 0 8px 32px 0 rgba(255, 87, 34, 0.18);
+            transform: scale(1.01);
+        }
+        .dark-mode .completed-row {
+            background: #232323 !important;
+            color: #f5f5f5;
+        }
+        @media (max-width: 900px) {
+            .container { width: 98vw; margin: 0 1vw; }
+            .row, .graph-row, .targets-row, .completed-row { flex-direction: column; height: auto; }
+            .summary-container, .max-session-container, .graph-row, .target-card, .completed-card { min-width: 0; width: 100%; }
+            .targets-row { padding: 18px 8px; }
+        }
+        body.dark-mode { background: #181818; color: #f5f5f5; }
+        .dark-mode .container { background: #181818; }
+        .dark-mode .summary-container, .dark-mode .max-session-container, .dark-mode .graph-row, .dark-mode .target-card, .dark-mode .completed-card {
+            background: #232323;
+            color: #f5f5f5;
+        }
+        .dark-mode .summary-title, .dark-mode .graph-title, .dark-mode .target-title, .dark-mode .completed-title { color: #ffb74d; }
+        .dark-mode .summary-value, .dark-mode .completed-value { color: #ff9800; }
+        .dark-mode .bar-label { color: #ffb74d; }
+        .dark-mode .bar-xlabel { color: #bbb; }
+        .dark-mode .target-green { color: #4caf50; }
+        .dark-mode .target-red { color: #f44336; }
+        .dark-mode .no-completed { color: #ffb74d; }
+        /* Navbar styles (copied from home/courses) */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 0;
+            background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%);
+            box-shadow: 4px 0 24px 0 rgba(255, 87, 34, 0.10);
+            overflow-x: hidden;
+            transition: width 0.3s cubic-bezier(.4,2,.6,1), box-shadow 0.3s;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            padding-top: 60px;
+        }
+        .navbar.open {
+            width: 20%;
+            box-shadow: 4px 0 32px 0 rgba(255, 87, 34, 0.18);
+        }
+        .navbar-toggle {
+            background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            box-shadow: 0 2px 8px 0 rgba(255, 87, 34, 0.10);
+            cursor: pointer;
+            margin-right: 18px;
+            margin-left: -8px;
+            transition: box-shadow 0.2s, color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .navbar-toggle:hover {
+            color: #fff3e0;
+            box-shadow: 0 4px 16px 0 rgba(255, 87, 34, 0.18);
+            transform: scale(1.08);
+        }
+        .dark-mode .navbar-toggle {
+            background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+            color: #fff;
+        }
+        .dark-mode .navbar-toggle:hover {
+            color: #ff9800;
+        }
+        .navbar .close-btn {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            color: #ff5722;
+            cursor: pointer;
+        }
+        .navbar ul {
+            list-style: none;
+            padding: 0 0 0 24px;
+            margin: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            gap: 12px;
+        }
+        .navbar-elements {
+            width: 80%;
+            border-radius: 12px;
+            transition: color 0.2s, background 0.2s, box-shadow 0.25s, transform 0.25s;
+        }
+        .navbar a {
+            width: 80%;
+            text-decoration: none;
+            color: #ff5722;
+            font-size: 1.15rem;
+            font-weight: 600;
+            display: inline-block;
+            padding: 14px 32px;
+        }
+        .navbar-elements:hover {
+            color: #ff9800;
+            background: #fff3e0;
+            transform: scale(1.08);
+            box-shadow: 0 4px 18px 0 rgba(255, 87, 34, 0.18), 0 2px 8px 0 rgba(255, 152, 0, 0.12);
+        }
+        .dark-mode .navbar-elements {
+            color: #ffb74d;
+        }
+        .dark-mode .navbar-elements:hover {
+            background: #232323;
+            box-shadow: 0 4px 18px 0 rgba(255, 152, 0, 0.22), 0 2px 8px 0 rgba(255, 87, 34, 0.14);
+            color: #ff9800;
+        }
+        .dark-mode .navbar a{
+            color: #ffb74d;
+            text-decoration: none;
+        }
+        .dark-mode .navbar {
+            background: linear-gradient(180deg, #232323 0%, #181818 100%);
+            box-shadow: 4px 0 24px 0 rgba(255, 152, 0, 0.13);
+        }
+        .dark-mode .navbar .close-btn,
+        .dark-mode .navbar-toggle {
+            color: #ffb74d;
+        }
+        .dark-mode .navbar-toggle:hover {
+            color: #ff9800;
+        }
+        .dark-mode .navbar.open {
+            box-shadow: 4px 0 32px 0 rgba(255, 152, 0, 0.18);
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar" id="navbar">
+        <button class="close-btn" id="closeNavbar" aria-label="Close navigation">&times;</button>
+        <ul id="navbarLinks">
+            <li class="navbar-elements"><a href="/home">Home</a></li>
+            <li class="navbar-elements"><a href="/courses">Courses</a></li>
+            <li class="navbar-elements"><a href="/record_session">Record Session</a></li>
+            <li class="navbar-elements"><a href="/all_sessions">All Sessions</a></li>
+            <li class="navbar-elements"><a href="/analytics">Analytics</a></li>
+        </ul>
+    </div>
+    <div class="navbar-bg" id="navbarBg"></div>
+    <div class="container">
+        <div class="header-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; margin-top: 32px;">
+            <button class="navbar-toggle" id="openNavbar" aria-label="Open navigation">&#9776;</button>
+            <div class="header-title" style="font-size: 2.1rem; font-weight: 700; color: #ff5722; letter-spacing: 1px;">Analytics</div>
+            <button id="mode-toggle" aria-label="Toggle dark/light mode" style="background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%); color: #fff; border: none; border-radius: 20px; padding: 8px 22px; font-size: 1rem; font-weight: 600; box-shadow: 0 2px 8px 0 rgba(255, 87, 34, 0.10); cursor: pointer; transition: box-shadow 0.2s;">🌙 Dark Mode</button>
+        </div>
+        <!-- Top Row: Summary Stats -->
+        <div class="row">
+            <div class="summary-container">
+                <div class="summary-title">Monthly Summary</div>
+                <div class="summary-value" id="monthlyHours">0h 0m</div>
+                <div class="summary-desc">Total hours spent on live courses this month</div>
+            </div>
+            <div class="max-session-container">
+                <div class="summary-title">Maximum Session Time</div>
+                <div class="summary-value" id="maxSession">0h 0m</div>
+                <div class="summary-desc" id="maxSessionCourse">Longest session: -</div>
+            </div>
+        </div>
+        <!-- Middle Row: Time Spent Graph -->
+        <div class="graph-row">
+            <div class="graph-header">
+                <div class="graph-title">Time Spent Per Day</div>
+                <div style="display:flex;gap:12px;">
+                    <select class="graph-dropdown" id="graphCourse">
+                        <option value="all">All Courses</option>
+                        <!-- Course options will be injected by JS -->
+                    </select>
+                    <select class="graph-dropdown" id="graphView">
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bar-graph" id="barGraph"></div>
+        </div>
+        <!-- Target Section -->
+        <div class="targets-row" id="targetsRow">
+            <div class="targets-heading" style="font-size:1.25rem;font-weight:700;color:#ff5722;margin-bottom:12px;letter-spacing:0.5px;">Weekly/Monthly Course Targets</div>
+            <!-- Example target card structure for reference:
+            <div class="target-card">
+                <span class="target-title">Course Name</span>
+                <span class="target-value target-green">10h / 10h</span>
+            </div>
+            -->
+            <!-- Target cards injected here by JS -->
+        </div>
+        <!-- Bottom Row: Completed Courses -->
+        <div class="completed-row" id="completedRow">
+            <div class="completed-heading" style="font-size:1.25rem;font-weight:700;color:#ff5722;margin-bottom:12px;letter-spacing:0.5px;">Completed Courses (Total Time Spent)</div>
+            <!-- Completed course cards or fallback message injected here -->
+        </div>
+    </div>
+    <script src="functionality/analytics.js"></script>
+    <script>
+        // Dark/Light mode toggle (robust, matches home.js)
+        document.addEventListener('DOMContentLoaded', function() {
+            const modeToggle = document.getElementById('mode-toggle');
+            const body = document.body;
+            let dark = false;
+            function setMode(isDark) {
+                if (isDark) {
+                    body.classList.add('dark-mode');
+                    modeToggle.textContent = '☀️ Light Mode';
+                } else {
+                    body.classList.remove('dark-mode');
+                    modeToggle.textContent = '🌙 Dark Mode';
+                }
+            }
+            if (localStorage.getItem('darkMode') === 'true') {
+                dark = true;
+                setMode(true);
+            }
+            modeToggle.addEventListener('click', () => {
+                dark = !dark;
+                setMode(dark);
+                localStorage.setItem('darkMode', dark);
+            });
+            // Navbar functionality (same as home/courses)
+            const navbar = document.getElementById('navbar');
+            const openNavbar = document.getElementById('openNavbar');
+            const closeNavbar = document.getElementById('closeNavbar');
+            const navbarBg = document.getElementById('navbarBg');
+            if (openNavbar) openNavbar.addEventListener('click', () => {
+                navbar.classList.add('open');
+                navbarBg.style.display = 'block';
+            });
+            if (closeNavbar) closeNavbar.addEventListener('click', () => {
+                navbar.classList.remove('open');
+                navbarBg.style.display = 'none';
+            });
+            if (navbarBg) navbarBg.addEventListener('click', () => {
+                navbar.classList.remove('open');
+                navbarBg.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
